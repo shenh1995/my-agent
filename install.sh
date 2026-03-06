@@ -125,6 +125,10 @@ clone_repo() {
     git clone "$REPO_URL" "$INSTALL_DIR"
 
     cd "$INSTALL_DIR"
+
+    # 给脚本添加执行权限
+    chmod +x install.sh
+
     success "仓库克隆完成"
 }
 
