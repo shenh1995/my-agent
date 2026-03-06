@@ -15,8 +15,8 @@ from .mcp.tools.bash import (
     DEFAULT_TIMEOUT,
 )
 
-# 项目目录（需要确认写入的目录）- 使用绝对路径
-PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../my_project"))
+# 项目目录（需要确认写入的目录）- 使用当前工作目录
+PROJECT_DIR = os.getcwd()
 
 def confirm_write(file_path: str) -> bool:
     """确认是否允许写入文件，支持上下键选择

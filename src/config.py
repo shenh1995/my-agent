@@ -9,8 +9,8 @@ from typing import Optional
 class AppConfig:
     """应用程序配置类"""
 
-    # 工作目录
-    work_directory: str = "./my_project"
+    # 工作目录 - 默认使用当前目录
+    work_directory: str = "."
 
     # 权限模式
     permission_mode: str = "default"

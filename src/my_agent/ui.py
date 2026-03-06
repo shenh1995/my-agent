@@ -114,7 +114,7 @@ def print_help():
     print("")
     print("  配置:")
     print("    权限模式: bypassPermissions")
-    print("    工作目录: ./my_project")
+    print(f"    工作目录: {os.getcwd()}")
     print("    允许工具: bash, read_file, write_file")
     print("")
 

@@ -145,8 +145,8 @@ async def run():
     # 会话控制
     continue_conversation = False
 
-    # 工作目录
-    work_dir = "./my_project"
+    # 工作目录 - 使用当前启动目录
+    work_dir = os.getcwd()
 
     # 检查点管理器
     checkpoint_manager = CheckpointManager(work_dir)

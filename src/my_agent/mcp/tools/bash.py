@@ -25,8 +25,8 @@ from claude_agent_sdk import tool
 DEFAULT_TIMEOUT = 120000  # 2 分钟
 MAX_TIMEOUT = 600000  # 10 分钟
 
-# 项目目录
-PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../my_project"))
+# 项目目录 - 使用当前工作目录
+PROJECT_DIR = os.getcwd()
 
 
 @dataclass
