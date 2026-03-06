@@ -1,0 +1,16 @@
+# MCP 配置文件（包含敏感 token）
+.mcp.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
