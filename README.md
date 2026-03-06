@@ -19,14 +19,32 @@
 
 ## 安装
 
-### 1. 克隆仓库
+### 方式一：一键安装（推荐）
+
+使用 curl 执行安装脚本：
 
 ```bash
-git clone https://github.com/your-username/my-agent.git
+curl -fsSL https://raw.githubusercontent.com/shenh1995/my-agent/main/install.sh | bash
+```
+
+或使用 wget：
+
+```bash
+wget -qO- https://raw.githubusercontent.com/shenh1995/my-agent/main/install.sh | bash
+```
+
+安装完成后，按照提示配置 API 密钥即可使用。
+
+### 方式二：手动安装
+
+#### 1. 克隆仓库
+
+```bash
+git clone git@github.com:shenh1995/my-agent.git
 cd my-agent
 ```
 
-### 2. 创建虚拟环境
+#### 2. 创建虚拟环境
 
 ```bash
 python -m venv .venv
@@ -35,13 +53,13 @@ source .venv/bin/activate  # Linux/macOS
 .venv\Scripts\activate  # Windows
 ```
 
-### 3. 安装依赖
+#### 3. 安装依赖
 
 ```bash
 pip install -e .
 ```
 
-### 4. 配置环境变量
+#### 4. 配置环境变量
 
 复制示例配置文件并填入你的 API 密钥：
 
