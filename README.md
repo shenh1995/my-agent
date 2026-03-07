@@ -24,13 +24,13 @@
 使用 curl 执行安装脚本：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/shenh1995/my-agent/main/install.sh | bash
+curl -fsSL https://cdn.jsdelivr.net/gh/shenh1995/my-agent@main/install.sh | bash
 ```
 
 或使用 wget：
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/shenh1995/my-agent/main/install.sh | bash
+wget -qO- https://cdn.jsdelivr.net/gh/shenh1995/my-agent@main/install.sh | bash
 ```
 
 安装完成后，按照提示配置 API 密钥即可使用。

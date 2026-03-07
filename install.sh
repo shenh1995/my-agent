@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # My Agent 安装脚本
-# 使用方法: curl -fsSL https://raw.githubusercontent.com/shenh1995/my-agent/main/install.sh | bash
+# 使用方法: curl -fsSL https://cdn.jsdelivr.net/gh/shenh1995/my-agent@main/install.sh | bash
 
 set -e
 
