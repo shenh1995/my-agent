@@ -15,6 +15,7 @@ from typing import Dict, Any, Optional, List
 from claude_agent_sdk import tool
 from claude_agent_sdk.types import ClaudeAgentOptions
 
+from ... import get_startup_cwd
 from ...task_manager import (
     TaskManager,
     TaskStatus,
@@ -477,6 +478,9 @@ async def task_tool(args: Dict[str, Any]) -> Dict[str, Any]:
 
         # 配置智能体选项
         options = ClaudeAgentOptions()
+
+        # 设置工作目录为启动目录
+        options.cwd = get_startup_cwd()
 
         # 设置模型
         if model:
