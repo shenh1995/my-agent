@@ -17,6 +17,47 @@ API_KEY=""
 BASE_URL=""
 MODEL=""
 
+# 从终端读取输入（解决管道执行问题）
+prompt_input() {
+    local prompt_msg="$1"
+    local var_name="$2"
+    local default_val="${3:-}"
+    local input_val
+
+    if [ -t 0 ]; then
+        # 直接在终端运行
+        read -p "$prompt_msg" input_val
+    else
+        # 管道执行，从 /dev/tty 读取
+        echo -n "$prompt_msg" > /dev/tty
+        read input_val < /dev/tty
+    fi
+
+    # 如果输入为空，使用默认值
+    if [ -z "$input_val" ] && [ -n "$default_val" ]; then
+        input_val="$default_val"
+    fi
+
+    eval "$var_name=\"\$input_val\""
+}
+
+# 确认输入（y/N）
+prompt_confirm() {
+    local prompt_msg="$1"
+    local reply
+
+    if [ -t 0 ]; then
+        read -p "$prompt_msg" -n 1 -r reply
+        echo
+    else
+        echo -n "$prompt_msg" > /dev/tty
+        read -n 1 -r reply < /dev/tty
+        echo > /dev/tty
+    fi
+
+    [[ $reply =~ ^[Yy]$ ]]
+}
+
 # 打印函数
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
@@ -116,9 +157,7 @@ clone_repo() {
 
     if [ -d "$INSTALL_DIR" ]; then
         warn "目录 $INSTALL_DIR 已存在"
-        read -p "是否删除并重新安装? (y/N): " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if prompt_confirm "是否删除并重新安装? (y/N): "; then
             info "删除现有目录..."
             rm -rf "$INSTALL_DIR"
         else
@@ -174,22 +213,21 @@ setup_env() {
 
         # 获取 ANTHROPIC_API_KEY
         echo -e "${BLUE}ANTHROPIC_API_KEY (必填):${NC}"
-        read -p "  请输入你的 API Key: " API_KEY
+        prompt_input "  请输入你的 API Key: " API_KEY
         while [ -z "$API_KEY" ]; do
             echo -e "${RED}  API Key 不能为空，请重新输入${NC}"
-            read -p "  请输入你的 API Key: " API_KEY
+            prompt_input "  请输入你的 API Key: " API_KEY
         done
 
         # 获取 ANTHROPIC_BASE_URL
         echo ""
         echo -e "${BLUE}ANTHROPIC_BASE_URL (可选，直接回车跳过):${NC}"
-        read -p "  请输入 API Base URL: " BASE_URL
+        prompt_input "  请输入 API Base URL: " BASE_URL
 
         # 获取 ANTHROPIC_MODEL
         echo ""
         echo -e "${BLUE}ANTHROPIC_MODEL (可选，默认: claude-sonnet-4-6):${NC}"
-        read -p "  请输入模型名称: " MODEL
-        MODEL=${MODEL:-claude-sonnet-4-6}
+        prompt_input "  请输入模型名称: " MODEL "claude-sonnet-4-6"
 
         # 创建 .env 文件
         echo ""
@@ -236,9 +274,7 @@ setup_claude_settings() {
     # 如果 settings.json 已存在，询问是否覆盖
     if [ -f "$SETTINGS_FILE" ]; then
         warn "settings.json 已存在"
-        read -p "是否覆盖? (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        if ! prompt_confirm "是否覆盖? (y/N): "; then
             info "跳过 settings.json 配置"
             return
         fi
