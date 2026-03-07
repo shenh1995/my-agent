@@ -46,6 +46,7 @@ from .ui import (
     print_goodbye,
 )
 from .permissions import execute_bash, can_use_tool
+from .highlight import format_text_with_code
 from .input import (
     create_prompt_stream,
     create_session,
