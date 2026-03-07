@@ -5,6 +5,8 @@
 ## 特性
 
 - **交互式 CLI** - 美观的命令行界面，支持多行输入和语法高亮
+- **一键安装** - 自动下载预编译二进制文件，无需配置 Python 环境
+- **首次运行向导** - 交互式配置 API Key、Base URL 和模型
 - **MCP 支持** - 支持 Model Context Protocol，可扩展工具能力
 - **Skill 系统** - 通过斜杠命令执行预定义任务
 - **Plan Mode** - 只读探索模式，生成计划供审批后执行
@@ -14,12 +16,11 @@
 
 ## 环境要求
 
-- Python >= 3.10
-- Node.js >= 18 (用于 MCP 服务器)
+- Node.js >= 18 (可选，用于 MCP 服务器)
 
 ## 安装
 
-### 方式一：一键安装（推荐）
+### 一键安装
 
 使用 curl 执行安装脚本：
 
@@ -33,66 +34,10 @@ curl -fsSL https://cdn.jsdelivr.net/gh/shenh1995/my-agent@main/install.sh | bash
 wget -qO- https://cdn.jsdelivr.net/gh/shenh1995/my-agent@main/install.sh | bash
 ```
 
-安装完成后，按照提示配置 API 密钥即可使用。
-
-### 方式二：手动安装
-
-#### 1. 克隆仓库
-
-```bash
-git clone git@github.com:shenh1995/my-agent.git
-cd my-agent
-```
-
-#### 2. 创建虚拟环境
-
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# 或
-.venv\Scripts\activate  # Windows
-```
-
-#### 3. 安装依赖
-
-```bash
-pip install -e .
-```
-
-#### 4. 配置环境变量
-
-复制示例配置文件并填入你的 API 密钥：
-
-```bash
-cp .env.example .env
-```
-
-编辑 `.env` 文件：
-
-```env
-ANTHROPIC_BASE_URL=https://api.anthropic.com
-ANTHROPIC_API_KEY=your-api-key-here
-ANTHROPIC_MODEL=claude-sonnet-4-6
-```
-
-### 5. 配置 MCP (可选)
-
-如果你需要使用 MCP 服务器（如 GitHub 集成），创建 `.mcp.json` 文件：
-
-```json
-{
-  "mcpServers": {
-    "github": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "your-github-token-here"
-      }
-    }
-  }
-}
-```
+安装脚本会：
+1. 自动检测操作系统和架构
+2. 从 GitHub Releases 下载对应的预编译二进制文件
+3. 安装到 `/usr/local/bin/my_claude`
 
 ## 使用
 
@@ -100,6 +45,29 @@ ANTHROPIC_MODEL=claude-sonnet-4-6
 
 ```bash
 my_claude
+```
+
+### 首次运行
+
+首次运行时，会启动配置向导，引导你输入：
+
+- **API Key** - 你的 API 密钥
+- **Base URL** - API 服务地址
+- **模型名称** - 使用的模型
+
+配置会保存到 `~/.claude/my-agent/.env` 文件中。
+
+### 修改配置
+
+如需修改配置，编辑配置文件：
+
+```bash
+# macOS / Linux
+nano ~/.claude/my-agent/.env
+
+# 或直接删除重新配置
+rm ~/.claude/my-agent/.env
+my_claude  # 会重新启动配置向导
 ```
 
 ### 基本命令
@@ -178,6 +146,7 @@ my-agent/
 │       ├── plan_mode.py     # Plan Mode
 │       ├── task_manager.py  # 任务管理
 │       ├── highlight.py     # 语法高亮
+│       ├── setup_wizard.py  # 首次运行配置向导
 │       ├── mcp/             # MCP 支持
 │       │   ├── config.py
 │       │   ├── server.py
@@ -185,26 +154,32 @@ my-agent/
 │       └── skills/          # Skill 系统
 │           ├── config.py
 │           └── manager.py
-├── my_project/              # 默认工作目录
+├── .github/
+│   └── workflows/
+│       └── release.yml      # GitHub Actions 自动发布
+├── build.spec               # PyInstaller 构建配置
+├── run.py                   # PyInstaller 入口
+├── install.sh               # 安装脚本
 ├── pyproject.toml
-├── .env.example
 └── README.md
 ```
 
-## 开发
+## 从源码构建
 
-### 运行测试
-
-```bash
-python -m pytest
-```
-
-### 代码格式化
+如果你需要从源码构建：
 
 ```bash
-pip install black isort
-black src/
-isort src/
+# 克隆仓库
+git clone https://github.com/shenh1995/my-agent.git
+cd my-agent
+
+# 安装依赖
+pip install -e ".[build]"
+
+# 构建二进制文件
+pyinstaller build.spec
+
+# 构建产物位于 dist/ 目录
 ```
 
 ## 许可证
