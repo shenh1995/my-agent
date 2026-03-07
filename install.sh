@@ -90,7 +90,7 @@ detect_arch() {
 get_latest_version() {
     info "获取最新版本..."
 
-    LATEST_VERSION=$(curl -s "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    LATEST_VERSION=$(wget -qO- "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
     if [ -z "$LATEST_VERSION" ]; then
         error "无法获取最新版本信息"
@@ -114,8 +114,11 @@ get_download_filename() {
 
 # 下载二进制文件
 download_binary() {
+
+    info "downloading binary..."
     FILENAME=$(get_download_filename)
-    DOWNLOAD_URL="${RELEASES_URL}/download/${LATEST_VERSION}/${FILENAME}"
+    info "FILENAME: $FILENAME"
+    DOWNLOAD_URL="https://gh-proxy.com/${RELEASES_URL}/download/${LATEST_VERSION}/${FILENAME}"
 
     info "下载地址: $DOWNLOAD_URL"
 
@@ -124,7 +127,7 @@ download_binary() {
     TEMP_FILE="${TEMP_DIR}/${FILENAME}"
 
     # 下载文件
-    if ! curl -fsSL "$DOWNLOAD_URL" -o "$TEMP_FILE"; then
+    if ! wget -q "$DOWNLOAD_URL" -O "$TEMP_FILE"; then
         error "下载失败。请检查网络连接或版本是否存在。"
     fi
 
@@ -220,7 +223,28 @@ main() {
     check_nodejs
 
     info "开始下载二进制文件..."
-    TEMP_FILE=$(download_binary)
+    info "downloading binary..."
+    FILENAME=$(get_download_filename)
+    info "FILENAME: $FILENAME"
+    DOWNLOAD_URL="https://gh-proxy.com/${RELEASES_URL}/download/${LATEST_VERSION}/${FILENAME}"
+
+    info "下载地址: $DOWNLOAD_URL"
+
+    # 临时文件
+    TEMP_DIR=$(mktemp -d)
+    TEMP_FILE="${TEMP_DIR}/${FILENAME}"
+
+    # 下载文件
+    if ! wget -q "$DOWNLOAD_URL" -O "$TEMP_FILE"; then
+        error "下载失败。请检查网络连接或版本是否存在。"
+    fi
+
+    # 检查文件是否下载成功
+    if [ ! -f "$TEMP_FILE" ] || [ ! -s "$TEMP_FILE" ]; then
+        error "下载的文件无效"
+    fi
+
+    chmod +x "$TEMP_FILE"
 
     info "安装二进制文件..."
     install_binary "$TEMP_FILE"
