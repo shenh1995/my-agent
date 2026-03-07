@@ -12,6 +12,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# 全局变量（用户输入的配置）
+API_KEY=""
+BASE_URL=""
+MODEL=""
+
 # 打印函数
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
@@ -163,11 +168,96 @@ setup_env() {
     info "配置环境变量..."
 
     if [ ! -f ".env" ]; then
-        cp .env.example .env
-        info "已创建 .env 文件，请编辑此文件填入你的 API 密钥"
+        echo ""
+        echo -e "${YELLOW}请输入以下配置信息（直接回车使用默认值）:${NC}"
+        echo ""
+
+        # 获取 ANTHROPIC_API_KEY
+        echo -e "${BLUE}ANTHROPIC_API_KEY (必填):${NC}"
+        read -p "  请输入你的 API Key: " API_KEY
+        while [ -z "$API_KEY" ]; do
+            echo -e "${RED}  API Key 不能为空，请重新输入${NC}"
+            read -p "  请输入你的 API Key: " API_KEY
+        done
+
+        # 获取 ANTHROPIC_BASE_URL
+        echo ""
+        echo -e "${BLUE}ANTHROPIC_BASE_URL (可选，直接回车跳过):${NC}"
+        read -p "  请输入 API Base URL: " BASE_URL
+
+        # 获取 ANTHROPIC_MODEL
+        echo ""
+        echo -e "${BLUE}ANTHROPIC_MODEL (可选，默认: claude-sonnet-4-6):${NC}"
+        read -p "  请输入模型名称: " MODEL
+        MODEL=${MODEL:-claude-sonnet-4-6}
+
+        # 创建 .env 文件
+        echo ""
+        info "正在创建 .env 文件..."
+
+        cat > .env << EOF
+# Anthropic API 配置
+# 必填：你的 Anthropic API Key
+ANTHROPIC_API_KEY=${API_KEY}
+EOF
+
+        # 添加可选配置
+        if [ -n "$BASE_URL" ]; then
+            echo "" >> .env
+            echo "# API 基础 URL" >> .env
+            echo "ANTHROPIC_BASE_URL=${BASE_URL}" >> .env
+        fi
+
+        if [ -n "$MODEL" ]; then
+            echo "" >> .env
+            echo "# 模型选择" >> .env
+            echo "ANTHROPIC_MODEL=${MODEL}" >> .env
+        fi
+
+        success ".env 文件创建完成"
     else
         info ".env 文件已存在，跳过"
     fi
+}
+
+# 配置 Claude Code settings
+setup_claude_settings() {
+    info "配置 Claude Code settings..."
+
+    CLAUDE_DIR="$HOME/.claude"
+    SETTINGS_FILE="$CLAUDE_DIR/settings.json"
+
+    # 创建 .claude 目录
+    if [ ! -d "$CLAUDE_DIR" ]; then
+        mkdir -p "$CLAUDE_DIR"
+        info "已创建目录: $CLAUDE_DIR"
+    fi
+
+    # 如果 settings.json 已存在，询问是否覆盖
+    if [ -f "$SETTINGS_FILE" ]; then
+        warn "settings.json 已存在"
+        read -p "是否覆盖? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            info "跳过 settings.json 配置"
+            return
+        fi
+    fi
+
+    # 创建 settings.json（使用用户输入的值）
+    cat > "$SETTINGS_FILE" << EOF
+{
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "${API_KEY}",
+    "ANTHROPIC_BASE_URL": "${BASE_URL}",
+    "ANTHROPIC_MODEL": "${MODEL}",
+    "API_TIMEOUT_MS": "3000000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+  }
+}
+EOF
+
+    success "settings.json 创建完成: $SETTINGS_FILE"
 }
 
 # 打印安装完成信息
@@ -191,10 +281,7 @@ print_success_message() {
         echo "     .venv\\Scripts\\activate"
     fi
     echo ""
-    echo "  3. 配置 API 密钥:"
-    echo "     编辑 .env 文件，填入你的 ANTHROPIC_API_KEY"
-    echo ""
-    echo "  4. 运行程序:"
+    echo "  3. 运行程序:"
     echo "     my_claude"
     echo ""
     if [ "$OS" = "Mac" ]; then
@@ -223,6 +310,7 @@ main() {
     create_venv
     install_dependencies
     setup_env
+    setup_claude_settings
     print_success_message
 }
 
