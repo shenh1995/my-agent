@@ -208,7 +208,7 @@ setup_env() {
 
     if [ ! -f ".env" ]; then
         echo ""
-        echo -e "${YELLOW}请输入以下配置信息（直接回车使用默认值）:${NC}"
+        echo -e "${YELLOW}请输入以下配置信息:${NC}"
         echo ""
 
         # 获取 ANTHROPIC_API_KEY
@@ -221,13 +221,21 @@ setup_env() {
 
         # 获取 ANTHROPIC_BASE_URL
         echo ""
-        echo -e "${BLUE}ANTHROPIC_BASE_URL (可选，直接回车跳过):${NC}"
+        echo -e "${BLUE}ANTHROPIC_BASE_URL (必填):${NC}"
         prompt_input "  请输入 API Base URL: " BASE_URL
+        while [ -z "$BASE_URL" ]; do
+            echo -e "${RED}  Base URL 不能为空，请重新输入${NC}"
+            prompt_input "  请输入 API Base URL: " BASE_URL
+        done
 
         # 获取 ANTHROPIC_MODEL
         echo ""
-        echo -e "${BLUE}ANTHROPIC_MODEL (可选，默认: claude-sonnet-4-6):${NC}"
-        prompt_input "  请输入模型名称: " MODEL "claude-sonnet-4-6"
+        echo -e "${BLUE}ANTHROPIC_MODEL (必填):${NC}"
+        prompt_input "  请输入模型名称: " MODEL
+        while [ -z "$MODEL" ]; do
+            echo -e "${RED}  模型名称不能为空，请重新输入${NC}"
+            prompt_input "  请输入模型名称: " MODEL
+        done
 
         # 创建 .env 文件
         echo ""
@@ -235,22 +243,10 @@ setup_env() {
 
         cat > .env << EOF
 # Anthropic API 配置
-# 必填：你的 Anthropic API Key
 ANTHROPIC_API_KEY=${API_KEY}
+ANTHROPIC_BASE_URL=${BASE_URL}
+ANTHROPIC_MODEL=${MODEL}
 EOF
-
-        # 添加可选配置
-        if [ -n "$BASE_URL" ]; then
-            echo "" >> .env
-            echo "# API 基础 URL" >> .env
-            echo "ANTHROPIC_BASE_URL=${BASE_URL}" >> .env
-        fi
-
-        if [ -n "$MODEL" ]; then
-            echo "" >> .env
-            echo "# 模型选择" >> .env
-            echo "ANTHROPIC_MODEL=${MODEL}" >> .env
-        fi
 
         success ".env 文件创建完成"
     else
