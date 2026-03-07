@@ -168,15 +168,41 @@ install_binary() {
     rm -rf "$(dirname "$TEMP_FILE")"
 }
 
-# 检查 Node.js 版本（可选）
+# 检查 Node.js 版本
 check_nodejs() {
     info "检查 Node.js..."
 
     if ! command -v node &> /dev/null; then
-        warn "未找到 Node.js。MCP 功能需要 Node.js 18+。"
-        warn "请访问 https://nodejs.org 安装 Node.js"
-        warn "你可以继续使用，但 MCP 功能将无法使用。"
-        return
+        warn "未找到 Node.js。"
+        warn "Claude Code CLI 需要 Node.js 18+ 才能运行。"
+
+        if prompt_confirm "是否自动安装 Node.js 20.x? [y/N] "; then
+            if [ "$OS" = "macos" ]; then
+                # macOS 使用 Homebrew
+                if command -v brew &> /dev/null; then
+                    brew install node@20
+                    brew link node@20 --force
+                else
+                    warn "未找到 Homebrew，请手动安装 Node.js"
+                    warn "访问: https://nodejs.org"
+                    return 1
+                fi
+            else
+                # Linux 使用 NodeSource
+                curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+                sudo apt-get install -y nodejs
+            fi
+
+            if command -v node &> /dev/null; then
+                success "Node.js 安装成功: $(node --version)"
+            else
+                error "Node.js 安装失败"
+            fi
+        else
+            warn "请手动安装 Node.js 18+"
+            warn "访问: https://nodejs.org"
+            return 1
+        fi
     fi
 
     NODE_VERSION=$(node --version | sed 's/v//')
@@ -185,10 +211,56 @@ check_nodejs() {
     info "找到 Node.js 版本: $NODE_VERSION"
 
     if [ "$NODE_MAJOR" -lt 18 ]; then
-        warn "Node.js 版本过低。MCP 功能需要 Node.js 18+，当前版本: $NODE_VERSION"
-        warn "MCP 功能可能无法正常工作。"
+        warn "Node.js 版本过低。需要 Node.js 18+，当前版本: $NODE_VERSION"
+        return 1
     else
         success "Node.js 版本检查通过"
+    fi
+}
+
+# 检查 Claude Code CLI
+check_claude_cli() {
+    info "检查 Claude Code CLI..."
+
+    if ! command -v claude &> /dev/null; then
+        warn "未找到 Claude Code CLI"
+
+        # 检查 npm 是否可用
+        if ! command -v npm &> /dev/null; then
+            error "未找到 npm，请先安装 Node.js"
+        fi
+
+        if prompt_confirm "是否自动安装 @anthropic-ai/claude-code? [y/N] "; then
+            info "正在安装 @anthropic-ai/claude-code..."
+
+            # 检查是否需要 sudo
+            if npm config get prefix | grep -q "/usr/local" || npm config get prefix | grep -q "/usr"; then
+                sudo npm install -g @anthropic-ai/claude-code
+            else
+                npm install -g @anthropic-ai/claude-code
+            fi
+
+            if [ $? -eq 0 ]; then
+                success "Claude Code CLI 安装成功"
+
+                # 验证安装
+                if command -v claude &> /dev/null; then
+                    CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "unknown")
+                    info "Claude Code 版本: $CLAUDE_VERSION"
+                fi
+            else
+                error "Claude Code CLI 安装失败，请手动运行: npm install -g @anthropic-ai/claude-code"
+            fi
+        else
+            warn "请手动安装 Claude Code CLI:"
+            warn "  npm install -g @anthropic-ai/claude-code"
+            warn ""
+            warn "如果已本地安装，请添加到 PATH:"
+            warn "  export PATH=\"\$HOME/node_modules/.bin:\$PATH\""
+        fi
+    else
+        CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "unknown")
+        success "Claude Code CLI 已安装 (版本: $CLAUDE_VERSION)"
     fi
 }
 
@@ -207,6 +279,18 @@ print_success_message() {
     echo ""
     echo "首次运行将引导你配置 API Key、Base URL 和模型。"
     echo ""
+    echo "依赖检查:"
+    if command -v node &> /dev/null; then
+        echo -e "  Node.js:      ${GREEN}✓${NC} $(node --version)"
+    else
+        echo -e "  Node.js:      ${YELLOW}未安装${NC}"
+    fi
+    if command -v claude &> /dev/null; then
+        echo -e "  Claude CLI:   ${GREEN}✓${NC} 已安装"
+    else
+        echo -e "  Claude CLI:   ${YELLOW}未安装${NC} (运行: npm install -g @anthropic-ai/claude-code)"
+    fi
+    echo ""
 }
 
 # 主安装流程
@@ -221,6 +305,7 @@ main() {
     detect_arch
     get_latest_version
     check_nodejs
+    check_claude_cli
 
     info "开始下载二进制文件..."
     info "downloading binary..."
