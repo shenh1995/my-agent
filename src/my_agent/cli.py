@@ -37,7 +37,7 @@ from .commands import (
     CheckpointManager,
     update_slash_commands_with_skills,
 )
-from . import set_startup_cwd, get_startup_cwd
+from . import get_startup_cwd
 from .ui import (
     print_banner,
     clear_screen,
@@ -162,10 +162,8 @@ async def run():
     # 会话控制
     continue_conversation = False
 
-    # 工作目录 - 使用当前启动目录
-    work_dir = os.getcwd()
-    # 保存启动目录到全局状态
-    set_startup_cwd(work_dir)
+    # 工作目录 - 使用启动时捕获的目录
+    work_dir = get_startup_cwd()
 
     # 打印启动目录
     print(f"  启动目录: {work_dir}\n")

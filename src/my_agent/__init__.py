@@ -1,9 +1,11 @@
 """My Agent - Claude Agent SDK Interactive CLI Tool"""
 
+import os
+
 __version__ = "1.0.0"
 
-# 全局状态：启动目录
-_startup_cwd = None
+# 全局状态：启动目录 - 在模块加载时立即捕获
+_startup_cwd = os.getcwd()
 
 
 def set_startup_cwd(cwd: str):
@@ -13,11 +15,5 @@ def set_startup_cwd(cwd: str):
 
 
 def get_startup_cwd() -> str:
-    """获取启动目录，如果未设置则返回当前目录"""
-    return _startup_cwd or _get_original_cwd()
-
-
-def _get_original_cwd() -> str:
-    """获取原始启动目录（从环境变量或当前目录）"""
-    import os
-    return os.environ.get('MY_AGENT_STARTUP_CWD', os.getcwd())
+    """获取启动目录"""
+    return _startup_cwd
