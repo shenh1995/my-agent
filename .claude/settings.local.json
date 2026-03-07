@@ -138,7 +138,9 @@
       "Bash(git add install.sh && git commit -m \"$\\(cat <<'EOF'\nFix syntax error in install.sh\n\n- Fixed missing brace in YELLOW variable: ${YELLOW[WARN] -> ${YELLOW}[WARN]\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\" && git push origin main)",
       "Bash(git add install.sh && git commit -m \"$\\(cat <<'EOF'\nAdd execute permission to install.sh after cloning\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\" && git push origin main)",
       "Bash(git add pyproject.toml src/my_agent/cli.py src/my_agent/image.py && git commit -m \"$\\(cat <<'EOF'\nFix .env loading and add anthropic dependency\n\n- Add anthropic and pyyaml to dependencies in pyproject.toml\n- Fix .env loading to search multiple paths \\(cwd, install dir, ~/.claude\\)\n- Remove debug print statements from image.py\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git add .claude/settings.local.json && git add my_project/.images/screenshot_to_read.png my_project/test.py test_image.py webfetch.py)"
+      "Bash(git add .claude/settings.local.json && git add my_project/.images/screenshot_to_read.png my_project/test.py test_image.py webfetch.py)",
+      "Bash(git commit -m \"$\\(cat <<'EOF'\nClean up test files and update auto-allow settings\n\n- Remove temporary test files \\(test_image.py, webfetch.py, test.py\\)\n- Remove test image \\(screenshot_to_read.png\\)\n- Add Bash commands to auto-allow list for smoother workflow\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git add .claude/settings.local.json && git commit -m \"$\\(cat <<'EOF'\nUpdate auto-allow list with latest git commands\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   },
   "enableAllProjectMcpServers": true,
