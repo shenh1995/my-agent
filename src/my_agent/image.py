@@ -20,10 +20,6 @@ def get_anthropic_client() -> Anthropic:
     Returns:
         配置好的 Anthropic 客户端
     """
-    print(os.environ.get("ANTHROPIC_API_KEY"))
-    print(os.environ.get("PYTHON_PATH"))
-    print(os.environ.get("ANTHROPIC_IMAGE_URL"))
-
     return Anthropic(
         api_key=os.environ.get("ANTHROPIC_API_KEY"),
         base_url=os.environ.get("ANTHROPIC_IMAGE_URL")
@@ -66,10 +62,6 @@ def analyze_image(text: str, image_path: str) -> str:
         }
     ]
 
-    print("================== 模型请求 ===================")
-    print(text)
-    print(os.environ.get("ANTHROPIC_IMAGE_MODEL", "glm-5"))
-
     # 调用模型
     model = os.environ.get("ANTHROPIC_IMAGE_MODEL", "glm-5")
     response = client.messages.create(
@@ -103,7 +95,6 @@ def analyze_images(text: str, image_paths: List[str]) -> str:
 
     # 构建内容块
     content_blocks = [{"type": "text", "text": text}]
-    print(content_blocks)
 
     for image_path in image_paths:
         base64_data, mime_type = encode_image_to_base64(image_path)
@@ -118,9 +109,7 @@ def analyze_images(text: str, image_paths: List[str]) -> str:
 
     # 构建消息
     messages = [{"role": "user", "content": content_blocks}]
-    print("================== 模型请求1 ===================")
 
-    print(os.environ.get("ANTHROPIC_IMAGE_MODEL"))
     # 调用模型
     model = os.environ.get("ANTHROPIC_IMAGE_MODEL", "glm-5")
     response = client.messages.create(

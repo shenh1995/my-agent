@@ -7,7 +7,23 @@ import anyio
 from dotenv import load_dotenv
 
 # 加载 .env 文件
-load_dotenv()
+# 优先级：当前目录 > 安装目录 > 用户主目录
+env_loaded = False
+env_paths = [
+    os.path.join(os.getcwd(), '.env'),  # 当前工作目录
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), '.env'),  # 安装目录
+    os.path.expanduser('~/.claude/.env'),  # 用户主目录
+]
+
+for env_path in env_paths:
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+        env_loaded = True
+        break
+
+if not env_loaded:
+    # 如果都没找到，尝试默认加载
+    load_dotenv()
 
 from claude_agent_sdk import query, ClaudeAgentOptions
 from claude_agent_sdk.types import HookMatcher
