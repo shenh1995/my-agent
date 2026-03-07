@@ -12,10 +12,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 全局变量（用户输入的配置）
-API_KEY=""
-BASE_URL=""
-MODEL=""
+# GitHub 仓库信息
+REPO_OWNER="shenh1995"
+REPO_NAME="my-agent"
+RELEASES_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases"
 
 # 从终端读取输入（解决管道执行问题）
 prompt_input() {
@@ -67,60 +67,112 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 # 检测操作系统
 detect_os() {
     case "$(uname -s)" in
-        Linux*)     OS=Linux;;
-        Darwin*)    OS=Mac;;
-        CYGWIN*)    OS=Cygwin;;
-        MINGW*)     OS=MinGw;;
-        *)          OS="UNKNOWN"
+        Linux*)     OS=linux;;
+        Darwin*)    OS=macos;;
+        CYGWIN*)    OS=windows;;
+        MINGW*)     OS=windows;;
+        *)          error "不支持的操作系统: $(uname -s)";;
     esac
     info "检测到操作系统: $OS"
 }
 
-# 检查命令是否存在
-command_exists() {
-    command -v "$1" &> /dev/null
+# 检测架构
+detect_arch() {
+    case "$(uname -m)" in
+        x86_64|amd64)   ARCH=x86_64;;
+        arm64|aarch64)  ARCH=arm64;;
+        *)              error "不支持的架构: $(uname -m)";;
+    esac
+    info "检测到架构: $ARCH"
 }
 
-# 检查 Python 版本
-check_python() {
-    info "检查 Python 版本..."
+# 获取最新版本号
+get_latest_version() {
+    info "获取最新版本..."
 
-    PYTHON_CMD=""
-    MIN_PYTHON_MAJOR=3
-    MIN_PYTHON_MINOR=10
+    LATEST_VERSION=$(curl -s "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
-    # 检查 python3
-    if command_exists python3; then
-        PYTHON_CMD=python3
-    elif command_exists python; then
-        PYTHON_CMD=python
+    if [ -z "$LATEST_VERSION" ]; then
+        error "无法获取最新版本信息"
+    fi
+
+    info "最新版本: $LATEST_VERSION"
+}
+
+# 构建下载文件名
+get_download_filename() {
+    if [ "$OS" = "windows" ]; then
+        echo "my_claude-windows-x86_64.exe"
+    elif [ "$OS" = "macos" ] && [ "$ARCH" = "arm64" ]; then
+        echo "my_claude-macos-arm64"
+    elif [ "$OS" = "macos" ] && [ "$ARCH" = "x86_64" ]; then
+        echo "my_claude-macos-x86_64"
     else
-        error "未找到 Python。请安装 Python 3.10 或更高版本。"
+        echo "my_claude-${OS}-${ARCH}"
     fi
-
-    # 获取版本
-    PYTHON_VERSION=$($PYTHON_CMD --version 2>&1 | awk '{print $2}')
-    PYTHON_MAJOR=$(echo "$PYTHON_VERSION" | cut -d. -f1)
-    PYTHON_MINOR=$(echo "$PYTHON_VERSION" | cut -d. -f2)
-
-    info "找到 Python 版本: $PYTHON_VERSION"
-
-    if [ "$PYTHON_MAJOR" -lt "$MIN_PYTHON_MAJOR" ] || \
-       [ "$PYTHON_MAJOR" -eq "$MIN_PYTHON_MAJOR" -a "$PYTHON_MINOR" -lt "$MIN_PYTHON_MINOR" ]; then
-        error "Python 版本过低。需要 Python $MIN_PYTHON_MAJOR.$MIN_PYTHON_MINOR 或更高版本，当前版本: $PYTHON_VERSION"
-    fi
-
-    success "Python 版本检查通过"
 }
 
-# 检查 Node.js 版本
-check_nodejs() {
-    info "检查 Node.js 版本..."
+# 下载二进制文件
+download_binary() {
+    FILENAME=$(get_download_filename)
+    DOWNLOAD_URL="${RELEASES_URL}/download/${LATEST_VERSION}/${FILENAME}"
 
-    if ! command_exists node; then
+    info "下载地址: $DOWNLOAD_URL"
+
+    # 临时文件
+    TEMP_DIR=$(mktemp -d)
+    TEMP_FILE="${TEMP_DIR}/${FILENAME}"
+
+    # 下载文件
+    if ! curl -fsSL "$DOWNLOAD_URL" -o "$TEMP_FILE"; then
+        error "下载失败。请检查网络连接或版本是否存在。"
+    fi
+
+    # 检查文件是否下载成功
+    if [ ! -f "$TEMP_FILE" ] || [ ! -s "$TEMP_FILE" ]; then
+        error "下载的文件无效"
+    fi
+
+    chmod +x "$TEMP_FILE"
+
+    echo "$TEMP_FILE"
+}
+
+# 安装二进制文件
+install_binary() {
+    TEMP_FILE="$1"
+    INSTALL_DIR="/usr/local/bin"
+
+    info "安装目录: $INSTALL_DIR"
+
+    # 检查是否有写入权限
+    if [ ! -w "$INSTALL_DIR" ]; then
+        warn "需要管理员权限安装到 $INSTALL_DIR"
+        if command -v sudo &> /dev/null; then
+            sudo mv "$TEMP_FILE" "${INSTALL_DIR}/my_claude"
+            sudo chmod +x "${INSTALL_DIR}/my_claude"
+        else
+            error "无法获取管理员权限"
+        fi
+    else
+        mv "$TEMP_FILE" "${INSTALL_DIR}/my_claude"
+        chmod +x "${INSTALL_DIR}/my_claude"
+    fi
+
+    success "二进制文件已安装到 ${INSTALL_DIR}/my_claude"
+
+    # 清理临时目录
+    rm -rf "$(dirname "$TEMP_FILE")"
+}
+
+# 检查 Node.js 版本（可选）
+check_nodejs() {
+    info "检查 Node.js..."
+
+    if ! command -v node &> /dev/null; then
         warn "未找到 Node.js。MCP 功能需要 Node.js 18+。"
         warn "请访问 https://nodejs.org 安装 Node.js"
-        warn "你可以继续安装，但 MCP 功能将无法使用。"
+        warn "你可以继续使用，但 MCP 功能将无法使用。"
         return
     fi
 
@@ -137,161 +189,6 @@ check_nodejs() {
     fi
 }
 
-# 检查 Git
-check_git() {
-    info "检查 Git..."
-
-    if ! command_exists git; then
-        error "未找到 Git。请先安装 Git。"
-    fi
-
-    success "Git 检查通过"
-}
-
-# 克隆仓库
-clone_repo() {
-    REPO_URL="git@github.com:shenh1995/my-agent.git"
-    INSTALL_DIR="${INSTALL_DIR:-$HOME/my-agent}"
-
-    info "安装目录: $INSTALL_DIR"
-
-    if [ -d "$INSTALL_DIR" ]; then
-        warn "目录 $INSTALL_DIR 已存在"
-        if prompt_confirm "是否删除并重新安装? (y/N): "; then
-            info "删除现有目录..."
-            rm -rf "$INSTALL_DIR"
-        else
-            error "安装已取消"
-        fi
-    fi
-
-    info "克隆仓库..."
-    git clone "$REPO_URL" "$INSTALL_DIR"
-
-    cd "$INSTALL_DIR"
-
-    # 给脚本添加执行权限
-    chmod +x install.sh
-
-    success "仓库克隆完成"
-}
-
-# 创建虚拟环境
-create_venv() {
-    info "创建虚拟环境..."
-
-    $PYTHON_CMD -m venv .venv
-
-    # 激活虚拟环境
-    if [ "$OS" = "Mac" ] || [ "$OS" = "Linux" ]; then
-        source .venv/bin/activate
-    else
-        source .venv/Scripts/activate
-    fi
-
-    success "虚拟环境创建完成并已激活"
-}
-
-# 安装依赖
-install_dependencies() {
-    info "安装 Python 依赖..."
-
-    pip install --upgrade pip
-    pip install -e .
-
-    success "依赖安装完成"
-}
-
-# 配置环境变量
-setup_env() {
-    info "配置环境变量..."
-
-    if [ ! -f ".env" ]; then
-        echo ""
-        echo -e "${YELLOW}请输入以下配置信息:${NC}"
-        echo ""
-
-        # 获取 ANTHROPIC_API_KEY
-        echo -e "${BLUE}ANTHROPIC_API_KEY (必填):${NC}"
-        prompt_input "  请输入你的 API Key: " API_KEY
-        while [ -z "$API_KEY" ]; do
-            echo -e "${RED}  API Key 不能为空，请重新输入${NC}"
-            prompt_input "  请输入你的 API Key: " API_KEY
-        done
-
-        # 获取 ANTHROPIC_BASE_URL
-        echo ""
-        echo -e "${BLUE}ANTHROPIC_BASE_URL (必填):${NC}"
-        prompt_input "  请输入 API Base URL: " BASE_URL
-        while [ -z "$BASE_URL" ]; do
-            echo -e "${RED}  Base URL 不能为空，请重新输入${NC}"
-            prompt_input "  请输入 API Base URL: " BASE_URL
-        done
-
-        # 获取 ANTHROPIC_MODEL
-        echo ""
-        echo -e "${BLUE}ANTHROPIC_MODEL (必填):${NC}"
-        prompt_input "  请输入模型名称: " MODEL
-        while [ -z "$MODEL" ]; do
-            echo -e "${RED}  模型名称不能为空，请重新输入${NC}"
-            prompt_input "  请输入模型名称: " MODEL
-        done
-
-        # 创建 .env 文件
-        echo ""
-        info "正在创建 .env 文件..."
-
-        cat > .env << EOF
-# Anthropic API 配置
-ANTHROPIC_API_KEY=${API_KEY}
-ANTHROPIC_BASE_URL=${BASE_URL}
-ANTHROPIC_MODEL=${MODEL}
-EOF
-
-        success ".env 文件创建完成"
-    else
-        info ".env 文件已存在，跳过"
-    fi
-}
-
-# 配置 Claude Code settings
-setup_claude_settings() {
-    info "配置 Claude Code settings..."
-
-    CLAUDE_DIR="$HOME/.claude"
-    SETTINGS_FILE="$CLAUDE_DIR/settings.json"
-
-    # 创建 .claude 目录
-    if [ ! -d "$CLAUDE_DIR" ]; then
-        mkdir -p "$CLAUDE_DIR"
-        info "已创建目录: $CLAUDE_DIR"
-    fi
-
-    # 如果 settings.json 已存在，询问是否覆盖
-    if [ -f "$SETTINGS_FILE" ]; then
-        warn "settings.json 已存在"
-        if ! prompt_confirm "是否覆盖? (y/N): "; then
-            info "跳过 settings.json 配置"
-            return
-        fi
-    fi
-
-    # 创建 settings.json（使用用户输入的值）
-    cat > "$SETTINGS_FILE" << EOF
-{
-  "env": {
-    "ANTHROPIC_AUTH_TOKEN": "${API_KEY}",
-    "ANTHROPIC_BASE_URL": "${BASE_URL}",
-    "ANTHROPIC_MODEL": "${MODEL}",
-    "API_TIMEOUT_MS": "3000000",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
-  }
-}
-EOF
-
-    success "settings.json 创建完成: $SETTINGS_FILE"
-}
-
 # 打印安装完成信息
 print_success_message() {
     echo ""
@@ -299,30 +196,13 @@ print_success_message() {
     echo -e "${GREEN}         安装完成！${NC}"
     echo -e "${GREEN}========================================${NC}"
     echo ""
-    echo "安装目录: $INSTALL_DIR"
+    echo "安装版本: $LATEST_VERSION"
+    echo "安装位置: /usr/local/bin/my_claude"
     echo ""
-    echo "后续步骤:"
+    echo "运行程序:"
+    echo "  my_claude"
     echo ""
-    echo "  1. 进入项目目录:"
-    echo "     cd $INSTALL_DIR"
-    echo ""
-    echo "  2. 激活虚拟环境:"
-    if [ "$OS" = "Mac" ] || [ "$OS" = "Linux" ]; then
-        echo "     source .venv/bin/activate"
-    else
-        echo "     .venv\\Scripts\\activate"
-    fi
-    echo ""
-    echo "  3. 运行程序:"
-    echo "     my_claude"
-    echo ""
-    if [ "$OS" = "Mac" ]; then
-        echo "  提示: 你可以将以下内容添加到 ~/.zshrc 以便快速启动:"
-        echo "     alias my_claude='cd $INSTALL_DIR && source .venv/bin/activate && my_claude'"
-    elif [ "$OS" = "Linux" ]; then
-        echo "  提示: 你可以将以下内容添加到 ~/.bashrc 以便快速启动:"
-        echo "     alias my_claude='cd $INSTALL_DIR && source .venv/bin/activate && my_claude'"
-    fi
+    echo "首次运行将引导你配置 API Key、Base URL 和模型。"
     echo ""
 }
 
@@ -335,14 +215,16 @@ main() {
     echo -e "${NC}"
 
     detect_os
-    check_git
-    check_python
+    detect_arch
+    get_latest_version
     check_nodejs
-    clone_repo
-    create_venv
-    install_dependencies
-    setup_env
-    setup_claude_settings
+
+    info "开始下载二进制文件..."
+    TEMP_FILE=$(download_binary)
+
+    info "安装二进制文件..."
+    install_binary "$TEMP_FILE"
+
     print_success_message
 }
 

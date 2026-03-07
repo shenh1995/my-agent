@@ -18,6 +18,9 @@ dependencies = [
     "pyyaml",
 ]
 
+[project.optional-dependencies]
+build = ["pyinstaller>=6.0.0"]
+
 [project.scripts]
 my_claude = "my_agent.cli:main"
 

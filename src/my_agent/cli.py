@@ -12,6 +12,7 @@ env_loaded = False
 env_paths = [
     os.path.join(os.getcwd(), '.env'),  # 当前工作目录
     os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), '.env'),  # 安装目录
+    os.path.expanduser('~/.claude/my-agent/.env'),  # My Agent 配置目录
     os.path.expanduser('~/.claude/.env'),  # 用户主目录
 ]
 
@@ -467,6 +468,20 @@ async def run():
 
 def main():
     """命令行入口点"""
+    # 检查首次运行配置
+    from .setup_wizard import (
+        check_config_exists,
+        run_setup_wizard,
+        save_config,
+        load_config_to_env,
+    )
+
+    if not check_config_exists():
+        config = run_setup_wizard()
+        save_config(config)
+        # 加载新配置到环境变量
+        load_config_to_env()
+
     anyio.run(run)
 
 
