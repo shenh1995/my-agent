@@ -37,7 +37,7 @@ from .commands import (
     CheckpointManager,
     update_slash_commands_with_skills,
 )
-from . import set_startup_cwd
+from . import set_startup_cwd, get_startup_cwd
 from .ui import (
     print_banner,
     clear_screen,
@@ -167,6 +167,9 @@ async def run():
     # 保存启动目录到全局状态
     set_startup_cwd(work_dir)
 
+    # 打印启动目录
+    print(f"  启动目录: {work_dir}\n")
+
     # 检查点管理器
     checkpoint_manager = CheckpointManager(work_dir)
     checkpoint_counter = 0
@@ -292,7 +295,7 @@ async def run():
                     # 配置选项
                     skill_options = ClaudeAgentOptions(
                         permission_mode=options.permission_mode,
-                        cwd=options.cwd,
+                        cwd=get_startup_cwd(),
                         allowed_tools=options.allowed_tools,
                         mcp_servers=options.mcp_servers,
                         continue_conversation=continue_conversation,

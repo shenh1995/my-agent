@@ -480,7 +480,9 @@ async def task_tool(args: Dict[str, Any]) -> Dict[str, Any]:
         options = ClaudeAgentOptions()
 
         # 设置工作目录为启动目录
-        options.cwd = get_startup_cwd()
+        startup_cwd = get_startup_cwd()
+        options.cwd = startup_cwd
+        print(f"  子智能体工作目录: {startup_cwd}")
 
         # 设置模型
         if model:

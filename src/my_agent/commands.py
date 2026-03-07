@@ -13,6 +13,8 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.formatted_text import FormattedText
 from claude_agent_sdk import query, ClaudeAgentOptions
 
+from . import get_startup_cwd
+
 
 # 定义内置斜杠命令
 BUILTIN_SLASH_COMMANDS: Dict[str, str] = {
@@ -94,7 +96,7 @@ async def handle_clear_command(options: ClaudeAgentOptions, prompt_stream_factor
 
     clear_options = ClaudeAgentOptions(
         permission_mode=options.permission_mode,
-        cwd=options.cwd,
+        cwd=get_startup_cwd(),
         allowed_tools=options.allowed_tools,
         mcp_servers=options.mcp_servers,
         max_turns=1,
@@ -132,7 +134,7 @@ async def handle_compact_command(options: ClaudeAgentOptions, prompt_stream_fact
 
     compact_options = ClaudeAgentOptions(
         permission_mode=options.permission_mode,
-        cwd=options.cwd,
+        cwd=get_startup_cwd(),
         allowed_tools=options.allowed_tools,
         mcp_servers=options.mcp_servers,
         max_turns=1,
