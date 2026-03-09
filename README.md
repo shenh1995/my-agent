@@ -10,6 +10,7 @@
 - **MCP 支持** - 支持 Model Context Protocol，可扩展工具能力
 - **Skill 系统** - 通过斜杠命令执行预定义任务
 - **Plan Mode** - 只读探索模式，生成计划供审批后执行
+- **项目级指令** - 支持 CLAUDE.md 文件定义项目特定的 AI 行为规则
 - **图片分析** - 支持图片输入和分析
 - **检查点管理** - 支持对话历史回溯
 - **Bash 集成** - 直接在对话中执行 shell 命令
@@ -87,6 +88,7 @@ my_claude  # 会重新启动配置向导
 | `/clear` | 清除对话历史，开始新对话 |
 | `/compact` | 压缩对话历史，保留重要上下文 |
 | `/rewind` | 回溯到之前的检查点 |
+| `/reload` | 重新加载项目指令 (CLAUDE.md) |
 | `/<skill>` | 执行自定义 Skill |
 
 ### 快捷键
@@ -130,6 +132,58 @@ skills:
 ```
 
 使用方式：`/review` 或 `/test`
+
+### 项目级指令 (CLAUDE.md)
+
+你可以在项目根目录创建 `CLAUDE.md` 文件来定义项目特定的 AI 行为规则。这些指令会在每次对话中自动注入到系统提示中。
+
+#### 创建 CLAUDE.md
+
+在项目根目录创建 `CLAUDE.md` 文件：
+
+```markdown
+# 项目指令
+
+## 代码风格
+- 使用 TypeScript 编写所有代码
+- 遵循 ESLint 规则
+- 函数必须有 JSDoc 注释
+
+## 测试
+- 使用 Jest 进行单元测试
+- 测试覆盖率要求 80% 以上
+
+## Git 规范
+- 提交信息遵循 Conventional Commits
+- 分支命名: feature/xxx, fix/xxx
+```
+
+#### 功能特点
+
+- **自动查找**：从当前目录向上查找 `CLAUDE.md`，直到 git 根目录
+- **支持多个文件**：子目录可以有独立的 `CLAUDE.md`，会与父目录的合并
+- **启动加载**：启动时会自动加载并显示加载信息
+- **热重载**：使用 `/reload` 命令重新加载项目指令
+
+#### 文件查找顺序
+
+1. 当前工作目录的 `CLAUDE.md`
+2. 父目录的 `CLAUDE.md`（向上查找，直到 git 根目录）
+3. 子目录的指令优先级高于父目录
+
+#### 使用示例
+
+```bash
+# 项目结构
+my-project/
+├── CLAUDE.md          # 项目级指令
+├── src/
+│   └── CLAUDE.md      # src 目录特定指令
+└── tests/
+
+# 在 my-project 目录运行时，会加载两个 CLAUDE.md 的内容
+# 在 src 目录运行时，优先使用 src/CLAUDE.md
+```
 
 ### Hooks 配置
 
@@ -215,32 +269,34 @@ Hook 可以通过 stdout 返回 JSON 来控制行为：
 my-agent/
 ├── src/
 │   └── my_agent/
-│       ├── cli.py           # 主入口
-│       ├── ui.py            # UI 显示
-│       ├── input.py         # 输入处理
-│       ├── commands.py      # 命令处理
-│       ├── permissions.py   # 权限管理
-│       ├── image.py         # 图片分析
-│       ├── plan_mode.py     # Plan Mode
-│       ├── task_manager.py  # 任务管理
-│       ├── highlight.py     # 语法高亮
-│       ├── setup_wizard.py  # 首次运行配置向导
-│       ├── mcp/             # MCP 支持
+│       ├── cli.py                 # 主入口
+│       ├── ui.py                  # UI 显示
+│       ├── input.py               # 输入处理
+│       ├── commands.py            # 命令处理
+│       ├── permissions.py         # 权限管理
+│       ├── image.py               # 图片分析
+│       ├── plan_mode.py           # Plan Mode
+│       ├── plan_ui.py             # Plan Mode UI
+│       ├── task_manager.py        # 任务管理
+│       ├── highlight.py           # 语法高亮
+│       ├── setup_wizard.py        # 首次运行配置向导
+│       ├── project_instructions.py # 项目级指令支持
+│       ├── mcp/                   # MCP 支持
 │       │   ├── config.py
 │       │   ├── server.py
 │       │   └── tools/
-│       ├── skills/          # Skill 系统
+│       ├── skills/                # Skill 系统
 │       │   ├── config.py
 │       │   └── manager.py
-│       └── hooks/           # Hook 系统
+│       └── hooks/                 # Hook 系统
 │           ├── __init__.py
 │           └── config.py
 ├── .github/
 │   └── workflows/
-│       └── release.yml      # GitHub Actions 自动发布
-├── build.spec               # PyInstaller 构建配置
-├── run.py                   # PyInstaller 入口
-├── install.sh               # 安装脚本
+│       └── release.yml            # GitHub Actions 自动发布
+├── build.spec                     # PyInstaller 构建配置
+├── run.py                         # PyInstaller 入口
+├── install.sh                     # 安装脚本
 ├── pyproject.toml
 └── README.md
 ```

@@ -21,6 +21,7 @@ BUILTIN_SLASH_COMMANDS: Dict[str, str] = {
     "/clear": "清除对话历史，开始新对话",
     "/compact": "压缩对话历史，保留重要上下文",
     "/rewind": "回滚对话到之前的某个状态",
+    "/reload": "重新加载项目指令 (CLAUDE.md)",
 }
 
 # 动态 skill 命令（从配置文件加载）

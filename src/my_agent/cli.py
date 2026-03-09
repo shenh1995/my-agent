@@ -74,6 +74,10 @@ from .plan_ui import (
 )
 from .skills import get_skill_manager, Skill
 from .hooks import init_hooks_from_config
+from .project_instructions import (
+    get_project_instructions_manager,
+    ProjectInstructionsManager,
+)
 from prompt_toolkit import print_formatted_text
 from prompt_toolkit.formatted_text import FormattedText
 
@@ -168,6 +172,11 @@ async def run():
 
     # 打印启动目录
     print(f"  启动目录: {work_dir}\n")
+
+    # 加载项目级指令 (CLAUDE.md)
+    project_instructions_manager = get_project_instructions_manager(work_dir)
+    project_instructions_manager.load()
+    project_instructions_manager.print_info()
 
     # 检查点管理器
     checkpoint_manager = CheckpointManager(work_dir)
@@ -270,6 +279,13 @@ async def run():
                     if result.get('restored_prompt'):
                         print(f"  \033[90m恢复的提示:\033[0m {result['restored_prompt'][:100]}")
                         print(f"  \033[90m你可以重新发送或编辑后发送\033[0m\n")
+                continue
+
+            # /reload 命令 - 重新加载项目指令
+            if prompt.lower() == '/reload':
+                print("\n  正在重新加载项目指令...")
+                project_instructions_manager.reload()
+                project_instructions_manager.print_info()
                 continue
 
             # Skill 命令处理（以 / 开头的非内置命令）
@@ -399,15 +415,25 @@ async def run():
             else:
                 print("\n\033[90m  ○ 思考中...\033[0m", end="\r")
 
-            # 创建消息流
-            prompt_stream = create_prompt_stream(prompt)
+            # 构建增强提示（包含项目指令）
+            enhanced_prompt = prompt
+
+            # 添加项目级指令
+            if project_instructions_manager.has_instructions():
+                enhanced_prompt = project_instructions_manager.build_enhanced_prompt(prompt)
 
             # Plan Mode 下添加系统提示词
             if current_plan_mode:
                 plan_system_prompt = get_plan_mode_system_prompt()
                 # 在 prompt 前添加系统提示
-                enhanced_prompt = f"{plan_system_prompt}\n\n用户任务: {prompt}"
-                prompt_stream = create_prompt_stream(enhanced_prompt)
+                if project_instructions_manager.has_instructions():
+                    # 项目指令已包含，只需添加 Plan Mode 指令
+                    enhanced_prompt = f"{plan_system_prompt}\n\n{enhanced_prompt}"
+                else:
+                    enhanced_prompt = f"{plan_system_prompt}\n\n用户任务: {prompt}"
+
+            # 创建消息流
+            prompt_stream = create_prompt_stream(enhanced_prompt)
 
             # 启动代理循环
             first_response = True
