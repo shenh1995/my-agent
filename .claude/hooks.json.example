@@ -1,0 +1,37 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "command": "echo '[PreToolUse] 即将执行 Bash 命令: $CLAUDE_TOOL_INPUT' >&2",
+        "timeout": 5,
+        "enabled": true
+      },
+      {
+        "matcher": "write_file",
+        "command": "echo '[PreToolUse] 即将写入文件' >&2",
+        "enabled": true
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "command": "echo '[PostToolUse] 工具执行完成: $CLAUDE_TOOL_NAME' >&2",
+        "enabled": true
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "command": "echo '[UserPromptSubmit] 用户提交了提示' >&2",
+        "enabled": false
+      }
+    ],
+    "Stop": [],
+    "SubagentStart": [],
+    "SubagentStop": [],
+    "PreCompact": [],
+    "Notification": [],
+    "PermissionRequest": []
+  }
+}

@@ -27,7 +27,6 @@ if not env_loaded:
     load_dotenv()
 
 from claude_agent_sdk import query, ClaudeAgentOptions
-from claude_agent_sdk.types import HookMatcher
 
 
 from .commands import (
@@ -74,6 +73,7 @@ from .plan_ui import (
     print_plan_cancelled,
 )
 from .skills import get_skill_manager, Skill
+from .hooks import init_hooks_from_config
 from prompt_toolkit import print_formatted_text
 from prompt_toolkit.formatted_text import FormattedText
 
@@ -173,9 +173,8 @@ async def run():
     checkpoint_manager = CheckpointManager(work_dir)
     checkpoint_counter = 0
 
-    hooks = {
-        "pre_tool_use": [HookMatcher(matcher="", hooks=[])]
-    }
+    # 加载 Hooks 配置
+    hooks = init_hooks_from_config()
 
     # 配置选项
     options = ClaudeAgentOptions(

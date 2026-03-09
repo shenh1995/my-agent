@@ -131,6 +131,84 @@ skills:
 
 使用方式：`/review` 或 `/test`
 
+### Hooks 配置
+
+Hooks 允许你在特定事件发生时执行自定义脚本，例如在工具调用前后、用户提交提示时等。
+
+在 `~/.claude/hooks.json` 或项目目录的 `.claude/hooks.json` 中配置：
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "command": "echo '即将执行 Bash 命令' >&2",
+        "timeout": 5,
+        "enabled": true
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "command": "echo '工具执行完成: $CLAUDE_TOOL_NAME' >&2",
+        "enabled": true
+      }
+    ],
+    "UserPromptSubmit": []
+  }
+}
+```
+
+#### 支持的 Hook 事件
+
+| 事件 | 触发时机 |
+|------|----------|
+| `PreToolUse` | 工具调用前 |
+| `PostToolUse` | 工具调用后 |
+| `PostToolUseFailure` | 工具调用失败后 |
+| `UserPromptSubmit` | 用户提交提示时 |
+| `Stop` | 会话停止时 |
+| `SubagentStart` | 子智能体启动时 |
+| `SubagentStop` | 子智能体停止时 |
+| `PreCompact` | 压缩对话前 |
+| `Notification` | 通知事件 |
+| `PermissionRequest` | 权限请求时 |
+
+#### Hook 配置字段
+
+| 字段 | 说明 |
+|------|------|
+| `matcher` | 匹配器，支持工具名、通配符 `*` 或正则表达式 |
+| `command` | 要执行的 shell 命令 |
+| `timeout` | 超时时间（秒），默认 60 |
+| `enabled` | 是否启用，默认 true |
+
+#### 环境变量
+
+Hook 命令执行时可以使用以下环境变量：
+
+- `CLAUDE_HOOK_EVENT` - 事件名称
+- `CLAUDE_SESSION_ID` - 会话 ID
+- `CLAUDE_CWD` - 当前工作目录
+- `CLAUDE_TOOL_NAME` - 工具名称（工具相关事件）
+- `CLAUDE_TOOL_INPUT` - 工具输入（JSON 格式）
+- `CLAUDE_PROMPT` - 用户提示（UserPromptSubmit 事件）
+
+#### Hook 输出
+
+Hook 可以通过 stdout 返回 JSON 来控制行为：
+
+```json
+{
+  "decision": "block",
+  "reason": "阻止执行的原因"
+}
+```
+
+- `decision: "block"` - 阻止操作继续执行
+- `systemMessage` - 显示给用户的系统消息
+
 ## 项目结构
 
 ```
@@ -151,9 +229,12 @@ my-agent/
 │       │   ├── config.py
 │       │   ├── server.py
 │       │   └── tools/
-│       └── skills/          # Skill 系统
-│           ├── config.py
-│           └── manager.py
+│       ├── skills/          # Skill 系统
+│       │   ├── config.py
+│       │   └── manager.py
+│       └── hooks/           # Hook 系统
+│           ├── __init__.py
+│           └── config.py
 ├── .github/
 │   └── workflows/
 │       └── release.yml      # GitHub Actions 自动发布
